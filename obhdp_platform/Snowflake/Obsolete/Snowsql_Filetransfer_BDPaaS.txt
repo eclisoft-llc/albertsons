@@ -1,0 +1,9 @@
+ cd /mapr/datalake/optum/optuminsight/p_edh/app/snowsql/
+ /*FACT_CLAIM*/
+./snowsql -c optum_poc -f /mapr/datalake/optum/optuminsight/prep_hp2/stg/developer/vanbalag/Salt_Hash/Java/output/csv/file1.sql
+./snowsql -c optum_poc -f /mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_02_split/fact_claim_02.sql
+./snowsql -c optum_poc -f /mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_01_split/fact_claim_01.sql
+/*MEMBER*/
+
+./snowsql -c optum_poc -f /mapr/datalake/optum/optuminsight/prep_hp2/stg/developer/vanbalag/Salt_Hash/Java/output/csv/file1.sql
+./snowsql -c optum_poc -f /mapr/datalake/optum/optuminsight/prep_hp2/stg/developer/vanbalag/Salt_Hash/Java/output/csv/error_file_pre.sql

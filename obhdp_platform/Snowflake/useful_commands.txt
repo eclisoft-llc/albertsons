@@ -1,0 +1,49 @@
+/* changing date timeformat*/
+alter session set date_input_format = 'DD-MON-YY';
+alter session set  TWO_DIGIT_CENTURY_START=2000;
+select cast ('26-JAN-21' as date) from dual;
+
+
+-------- Create PIPE for BILL_TYPE Table ------------------------------------------
+CREATE OR REPLACE PIPE PIPE_DIM_BILL_TYPE
+  AUTO_INGEST = FALSE
+  COMMENT = 'Copy date from MY_CSV_STAGE to DIM_BILL_TYPE table'
+  AS COPY INTO DIM_BILL_TYPE (
+    BILL_TYPE_DIM_ID,
+    BILL_TYPE,
+    BILL_TYPE_DESC,
+    INP_OUTP_IND,
+    DW_INSERT_DATETIME,
+    DW_UPDATE_DATETIME,
+    BILL_TYPE_CAT_LVL_2_DIM_ID,
+    BILL_TYPE_CAT_LVL_1_DIM_ID,
+    PLACE_OF_SVC_DIM_ID)
+  FROM (
+    SELECT STG.$1, STG.$2, STG.$3, STG.$4, STG.$5, STG.$6, STG.$7, STG.$8, STG.$9
+    FROM @MY_CSV_STAGE STG)
+  PATTERN = '.*dim_bill_type.*'
+  FILE_FORMAT = MYCSVFORMAT;
+
+----- List all tasks --------------------------------------------------------
+SHOW TASKS LIKE 'COPY_TO_%' in DATABASE ECT_DEV_OBH_DP_DB;
+
+----- List task history table -----------------------------------------------
+SELECT * from table(information_schema.task_history(
+    scheduled_time_range_start=>dateadd('hour', -1, current_timestamp()),
+    result_limit => 10,
+    task_name=>'COPY_TO_FACT_CLAIM'));
+
+----- List all file formats --------------------------------------------------
+SHOW FILE FORMATS in DATABASE ECT_DEV_OBH_DP_DB;
+
+----- Remove a file from stage -----------------------------------------------
+REMOVE @MY_CSV_STAGE pattern='.*DIM_COMPANY_202103191556_0101.*';
+
+----- Clone a table from different schema -------------------------------------
+CREATE TABLE TCOC.FACT_CLAIM CLONE ETL.FACT_CLAIM;
+
+----- Upload a file from local to snowflake stage -----------------------------
+put file:///Users/username1/Documents/TCOC/CVSFiles/DIM_PRODUCT_202103241322_0101_0110.csv @my_csv_stage auto_compress=true;
+
+----- Download a file from snowflake stage to local ---------------------------
+get @my_csv_stage/dim_provider_split_121.csv.gz file:///Users/username1/Documents/TCOC/CVSFiles/;

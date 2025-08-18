@@ -1,0 +1,8 @@
+apiVersion: v1
+metadata:
+  askId: UHGWM110-027616
+  caAgileId: 502582806768ud
+  projectKey: com.optum.obhdp:obhdp_platform
+  projectFriendlyName: obhdp_platform
+  componentType: code
+  targetQG: GATE_00

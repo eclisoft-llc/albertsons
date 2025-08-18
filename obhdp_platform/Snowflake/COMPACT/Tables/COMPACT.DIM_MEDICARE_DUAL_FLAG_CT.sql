@@ -1,0 +1,43 @@
+CREATE TABLE IF NOT EXISTS
+    COMPACT.DIM_MEDICARE_DUAL_FLAG
+    (
+        MEDICARE_DUAL_FLAG_DIM_ID INTEGER NOT NULL CONSTRAINT PK_F_DIM_MEDICARE_DUAL_FLAG_DIM_ID PRIMARY KEY,
+        MEDICARE_DUAL_FLAG VARCHAR(20),
+        MEDICARE_DUAL_FLAG_DESC VARCHAR(25),
+        DW_INSERT_DATETIME DATETIME,
+        DW_UPDATE_DATETIME DATETIME,
+	SF_INSERT_DATETIME DATETIME DEFAULT CURRENT_TIMESTAMP,
+	SF_UPDATE_DATETIME DATETIME DEFAULT CURRENT_TIMESTAMP,
+	SF_PROCESS_ID VARCHAR(36)
+    );
+COMMENT ON TABLE COMPACT.DIM_MEDICARE_DUAL_FLAG
+IS
+    'This table stores attributes that describe Medicare Dual eligible program types. ';
+COMMENT ON COLUMN COMPACT.DIM_MEDICARE_DUAL_FLAG.MEDICARE_DUAL_FLAG_DIM_ID
+IS
+    'Represents the link to DIM_MEDICARE_DUAL_FLAG table describing if the program types are Medicare Dual eligible. Values are 1 = Non-Dual, 2 = Dual, 0 = Unknown and -1 = N/A.'
+    ;
+COMMENT ON COLUMN COMPACT.DIM_MEDICARE_DUAL_FLAG.MEDICARE_DUAL_FLAG
+IS
+    'Code that represents the Medicare Dual eligible status values are Non-Dual, Dual, UNK and N/A.'
+    ;
+COMMENT ON COLUMN COMPACT.DIM_MEDICARE_DUAL_FLAG.MEDICARE_DUAL_FLAG_DESC
+IS
+    'Describes the Medicare Dual eligible status values are Non Dual, Dual, UNKNOWN and N/A.';
+COMMENT ON COLUMN COMPACT.DIM_MEDICARE_DUAL_FLAG.DW_INSERT_DATETIME
+IS
+    'Date the record was added to the SMART Data Warehouse.';
+COMMENT ON COLUMN COMPACT.DIM_MEDICARE_DUAL_FLAG.DW_UPDATE_DATETIME
+IS
+    'Date the record was updated in the SMART Data Warehouse.';
+
+COMMENT ON COLUMN COMPACT.DIM_MEDICARE_DUAL_FLAG.SF_INSERT_DATETIME
+IS
+    'Date the record was added to the OBHDP.';
+COMMENT ON COLUMN COMPACT.DIM_MEDICARE_DUAL_FLAG.SF_UPDATE_DATETIME
+IS
+    'Date the record was updated in the OBHDP.';
+
+COMMENT ON COLUMN COMPACT.DIM_MEDICARE_DUAL_FLAG.SF_PROCESS_ID
+IS
+    'Unique identifier assigned to the process that inserts/updates the data in OBHDP.';

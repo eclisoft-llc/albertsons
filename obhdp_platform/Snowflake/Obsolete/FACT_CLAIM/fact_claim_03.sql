@@ -1,0 +1,22 @@
+USE ROLE AZU_DWS_ECT_DEV_OBH_DP_ETL_SC_F_RL;
+USE WAREHOUSE LOAD_WH;
+USE DATABASE ECT_DEV_OBH_DP_DB;
+USE SCHEMA ECT_DEV_OBH_DP_DB.ETL;
+
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_10.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_11.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_12.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_13.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_14.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_15.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_16.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_1.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_2.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_3.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_4.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_5.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_6.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_7.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_8.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+put file:///mapr/datalake/optum/optuminsight/p_hp2/prd/developer/p_jars/Data/CSV/FACT_CLAIM_2021_03_split/FACT_CLAIM_2021_03_split_9.csv @TCOC.FACT_MY_CSV_STAGE overwrite=TRUE auto_compress=true PARALLEL = 99;
+!quit;

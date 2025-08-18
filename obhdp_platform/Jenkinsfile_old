@@ -1,0 +1,127 @@
+#!/usr/bin/env groovy
+
+
+//@Library("com.optum.jenkins.pipeline.library@v0.1.24")
+@Library("com.optum.jenkins.pipeline.library@master") _
+
+def sshCredId = 'obhdpprd'
+//def sshUser = 'hp2bdpp1'
+def sshUser = 'obhdpprd'
+def sshServer = 'rp000030080.uhc.com'
+
+
+pipeline {
+    agent {
+        label 'docker-maven-slave'
+    }
+    parameters {
+        choice (name: 'Environment',
+                choices: ['Update choices',
+                          'DEV','STG','PRD'],
+                description: 'Select Environment, use "Update choices" after committing to Jenkinsfile')
+        }
+    environment {
+        GITHUB_USER = 'my_github'
+        DEVOPS_METRICS_ENABLED = 'false'
+        SN_USER = 'obhdp_ServiceNow_User' //enter a non-user ID to integrate with the ServiceNow API
+        DOCKER_HOSTNAME = 'docker.optum.com'
+        emailForTicketInput = 'vigneshwaran.anbalagan@optum.com'
+        emailForApproval = 'vigneshwaran.anbalagan@optum.com'
+        usersForTicketInput = 'OBH_Elites'
+        usersForApproval = 'vanbalag'
+        emailForNotification = 'vigneshwaran.anbalagan@optum.com'
+     }
+
+    stages {
+        stage ('Build Jar') {
+            steps {
+                glMavenBuild pomFile: "pom.xml", skipTests: 'true'
+            }
+        }
+
+        stage('Sonar Scan') {
+            steps {
+                // glSonarMavenScan gitUserCredentialsId:"${env.GITHUB_USER}"
+                //glSonarMavenScan gitUserCredentialsId: "vanbalag_git"
+                glSonarMavenScan gitUserCredentialsId: "vanbalag_git1"
+            }
+        }
+
+        stage ("Input ServiceNow Ticket") {
+//      when {
+//        beforeAgent true
+//        anyOf { tag 'release-v*' } }
+            steps {
+                emailext body: "A Jenkins build is waiting for Change Ticket input. \nPlease login and use the \"Paused for input\" link to add an appropriate Change ticket: ${BUILD_URL}",
+                        subject: "Jenkins job $JOB_Name waiting for Change ticket input",
+                        to: "$emailForTicketInput"
+                glServiceNowTicketInput(message: "Please enter a ServiceNow ticket for this build", description: "The ticket needs to be at the \"Work in Progress\" state at time of submission", submitter:"$usersForTicketInput")
+            }
+        }
+
+        stage ("Get ServiceNow Ticket Details") {
+            agent { label 'docker-fortify-slave' }
+//      when {
+//        beforeAgent true
+//        anyOf { tag 'release-v*' } }
+            steps {
+                glServiceNowTicketGet(credentials: "$env.SN_USER", ticket: "$env.SN_TICKET")
+            }
+        }
+
+        stage ("Wait on Approval") {
+//      when {
+//        beforeAgent true
+//        anyOf { tag 'release-v*' } }
+            steps {
+                emailext body: "A Jenkins build for ${JOB_NAME} is waiting for your approval. \nPlease login to Jenkins and use the \"Paused for input\" link to approve: ${BUILD_URL}",
+                        subject: "Jenkins job $JOB_Name waiting for approval",
+                        to: "$emailForApproval"
+                glApproval(message: "Approve?", description: "Please review the supplied Change Ticket and approve if it is adequate.", submitter:"$usersForApproval", displayTicket: true)
+            }
+        }
+
+        stage ("Check if Change Ticket is In Progress") {
+            agent { label 'docker-fortify-slave' }
+//      when {
+//        beforeAgent true
+//        anyOf { tag 'release-v*' } }
+            steps {
+                glServiceNowTicketVerify(credentials: "$env.SN_USER", ticket: "$env.SN_TICKET", isChangeWindow: true)
+            }
+        }
+
+        stage ('Deploying to OBH Server') {
+            steps {
+                echo 'Deploying to OBH Server'
+                sshagent([sshCredId]){
+                    // the first ssh seems to be needed to establish the server as a known host for the scp
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+
+
+                }
+            }
+        }
+    }
+    post {
+        always {
+            echo 'This will always run'
+            emailext body:  "Build URL: ${BUILD_URL}",
+                    subject: "$currentBuild.currentResult-$JOB_NAME",
+                    to: 'vigneshwaran.anbalagan@optum.com'
+        }
+        success {
+            echo 'This will run only if successful'
+        }
+        failure {
+            echo 'This will run only if failed'
+        }
+        unstable {
+            echo 'This will run only if the run was marked as unstable'
+        }
+        changed {
+            echo 'This will run only if the state of the Pipeline has changed'
+            echo 'For example, if the Pipeline was previously failing but is now successful'
+        }
+    }
+}

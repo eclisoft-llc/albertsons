@@ -1,0 +1,18 @@
+CREATE TABLE IF NOT EXISTS COMPACT.DIM_RX_REFILL_CODE (
+    REFILL_CODE_DIM_ID NUMBER NOT NULL,
+    REFILL_CODE VARCHAR(3) NOT NULL,
+    REFILL_CODE_DESC VARCHAR(30),
+    DW_INSERT_DATETIME DATETIME NOT NULL,
+    DW_UPDATE_DATETIME DATETIME NOT NULL,
+    SF_INSERT_DATETIME DATETIME DEFAULT CURRENT_TIMESTAMP,
+    SF_UPDATE_DATETIME DATETIME DEFAULT CURRENT_TIMESTAMP,
+    SF_PROCESS_ID VARCHAR(36),
+    CONSTRAINT PK_REFILL_CODE_DIM_ID PRIMARY KEY (REFILL_CODE_DIM_ID),
+    CONSTRAINT UK_REFILL_CODE UNIQUE (REFILL_CODE)
+);
+COMMENT ON TABLE COMPACT.DIM_RX_REFILL_CODE IS 'This table stores attributes that describe how many refills are on the prescription.';
+COMMENT ON COLUMN COMPACT.DIM_RX_REFILL_CODE.REFILL_CODE_DIM_ID IS 'Represents the link to the DIM_RX_REFILL_CODE table describing how many refills are on the prescription. i.e. 100 = 00 New Prescription or 15 = 15 15 refills.';
+COMMENT ON COLUMN COMPACT.DIM_RX_REFILL_CODE.REFILL_CODE IS 'Code that represents how many refills are on the prescription. i.e. 00 = New Prescription or 15 = 15 refills.';
+COMMENT ON COLUMN COMPACT.DIM_RX_REFILL_CODE.REFILL_CODE_DESC IS 'Describes how many refills are on the prescription. i.e. New Prescription or 15 refills.';
+COMMENT ON COLUMN COMPACT.DIM_RX_REFILL_CODE.DW_INSERT_DATETIME IS 'Date the record was added to the Data Warehouse.';
+COMMENT ON COLUMN COMPACT.DIM_RX_REFILL_CODE.DW_UPDATE_DATETIME IS 'Date the record was updated in the Data Warehouse.';

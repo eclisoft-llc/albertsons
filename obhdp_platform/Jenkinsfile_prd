@@ -1,0 +1,198 @@
+#!/usr/bin/env groovy
+
+
+//@Library("com.optum.jenkins.pipeline.library@v0.1.24")
+@Library("com.optum.jenkins.pipeline.library@master") _
+def sshCredId
+def sshUser
+def sshServer
+
+pipeline {
+    agent {
+        label 'docker-maven-slave'
+    }
+    parameters {
+        choice (name: 'Environment',
+                choices: ['Update choices',
+                          'DEV','STG','PRD'],
+                description: 'Select Environment, use "Update choices" after committing to Jenkinsfile')
+        }
+    environment {
+        GITHUB_USER = 'my_github'
+        DEVOPS_METRICS_ENABLED = 'false'
+        SN_USER = 'obhdp_ServiceNow_User' //enter a non-user ID to integrate with the ServiceNow API
+        DOCKER_HOSTNAME = 'docker.optum.com'
+        emailForTicketInput = 'vigneshwaran.anbalagan@optum.com,vigneshwaran.asaithambi@optum.com,vimal_sethupathy@optum.com'
+        emailForApproval = 'vigneshwaran.anbalagan@optum.com,vigneshwaran.asaithambi@optum.com,vimal_sethupathy@optum.com'
+        usersForTicketInput = 'OBH_Elites'
+        usersForApproval = 'vanbalag,vrathin,vsethup1'
+        emailForNotification = 'vigneshwaran.anbalagan@optum.com,vigneshwaran.asaithambi@optum.com,vimal_sethupathy@optum.com'
+     }
+
+       options {
+             buildDiscarder(logRotator(daysToKeepStr: '5', numToKeepStr: '10'))
+             timeout(time: 1, unit: 'HOURS')
+             disableConcurrentBuilds()
+         }
+
+
+
+    stages {
+
+    stage('Print ENV') {
+                steps {
+                    script{
+                        if(params.Environment == 'PRD')
+                        {
+                            sshCredId = 'obhdpprd'
+                            sshUser = 'obhdpprd'
+                            sshServer = 'rp000030080.uhc.com'
+                            def jarPath='/obhdp/tcoc/p_jars'
+                            def scriptPath='/obhdp/tcoc/p_scripts'
+                            def confpath='/obhdp/tcoc/p_conf'
+                            def sql='/obhdp/tcoc/p_sql'
+
+                        } else {
+                            sshCredId = 'obhdpdev'
+                            sshUser = 'obhdpdev'
+                            sshServer = 'rp000026270.uhc.com'
+                            def jarPath='/obhdp_dev/tcoc/d_jars'
+                            def scriptPath='/obhdp_dev/tcoc/d_scripts'
+                            def confpath='/obhdp_dev/tcoc/d_conf'
+                            def sql='/obhdp_dev/tcoc/d_sql'
+
+                        }
+                    }
+                    sh 'printenv'
+                }
+            }
+
+        stage ('Build Jar') {
+            steps {
+                glMavenBuild pomFile: "pom.xml", skipTests: 'true'
+            }
+        }
+        stage('Sonar Scan') {
+            steps {
+                // glSonarMavenScan gitUserCredentialsId:"${env.GITHUB_USER}"
+                //glSonarMavenScan gitUserCredentialsId: "vanbalag_git"
+                glSonarMavenScan gitUserCredentialsId: "vanbalag_git1"
+            }
+        }
+
+        stage('Run Fortify Scan') {
+            agent {
+                // label 'docker-kitchensink-slave'
+                label 'docker-fortify-slave'
+            }
+
+            steps {
+                glFortifyScan fortifyBuildName:"OBHDP_TCOC",
+                        scarUploadToken:"f7e25f7f-8e00-483c-8eec-de497197dc38",
+                        scarProjectName:"OBHDP_TCOC",
+                        scarProjectVersion:"16983",
+                        criticalThreshold:10,
+                        highThreshold:20,
+                        mediumThreshold:50,
+                        lowThreshold:200,
+                        fortifyJdkVersion:"1.8",
+                        uploadToScar:false,
+                        wait: false
+            }
+        }
+
+        stage ("Input ServiceNow Ticket") {
+//      when {
+//        beforeAgent true
+//        anyOf { tag 'release-v*' } }
+            steps {
+                emailext body: "A Jenkins build is waiting for Change Ticket input. \nPlease login and use the \"Paused for input\" link to add an appropriate Change ticket: ${BUILD_URL}",
+                        subject: "Jenkins job $JOB_Name waiting for Change ticket input",
+                        to: "$emailForTicketInput"
+                glServiceNowTicketInput(message: "Please enter a ServiceNow ticket for this build", description: "The ticket needs to be at the \"Work in Progress\" state at time of submission", submitter:"$usersForTicketInput")
+            }
+        }
+
+        stage ("Get ServiceNow Ticket Details") {
+            agent { label 'docker-fortify-slave' }
+//      when {
+//        beforeAgent true
+//        anyOf { tag 'release-v*' } }
+            steps {
+                glServiceNowTicketGet(credentials: "$env.SN_USER", ticket: "$env.SN_TICKET")
+            }
+        }
+
+        stage ("Wait on Approval") {
+//      when {
+//        beforeAgent true
+//        anyOf { tag 'release-v*' } }
+            steps {
+                emailext body: "A Jenkins build for ${JOB_NAME} is waiting for your approval. \nPlease login to Jenkins and use the \"Paused for input\" link to approve: ${BUILD_URL}",
+                        subject: "Jenkins job $JOB_Name waiting for approval",
+                        to: "$emailForApproval"
+                glApproval(message: "Approve?", description: "Please review the supplied Change Ticket and approve if it is adequate.", submitter:"$usersForApproval", displayTicket: true)
+            }
+        }
+
+        stage ("Check if Change Ticket is In Progress") {
+            agent { label 'docker-fortify-slave' }
+//      when {
+//        beforeAgent true
+//        anyOf { tag 'release-v*' } }
+            steps {
+                glServiceNowTicketVerify(credentials: "$env.SN_USER", ticket: "$env.SN_TICKET", isChangeWindow: true)
+            }
+        }
+
+        stage ('Deploying to OBH Server') {
+            steps {
+                echo 'Deploying to OBH Server'
+                sshagent([sshCredId]){
+                    // the first ssh seems to be needed to establish the server as a known host for the scp
+                    print  "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+                    //***** folder creation *****
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/TCOC"
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/ETL"
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/FOUNDATION"
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/SF_File_Frmt_iStage"
+                    //* Copying scripts or SQL into OBH Server
+                    sh "scp ${workspace}/scripts/prd/* ${sshUser}@${sshServer}:${scriptPath}/"
+                    sh "scp ${workspace}/scripts/OBH_Smart_Sql_Exec.sh ${sshUser}@${sshServer}:${scriptPath}/"
+                    sh "scp ${workspace}/scripts/OBH_File_Trnfr_SF.sh ${sshUser}@${sshServer}:${scriptPath}/"
+                    sh "scp ${workspace}/Snowflake/ETL/* ${sshUser}@${sshServer}:${sql}/ETL/"
+                    sh "scp ${workspace}/Snowflake/FOUNDATION/* ${sshUser}@${sshServer}:${sql}/FOUNDATION/"
+                    sh "scp ${workspace}/Snowflake/TCOC/* ${sshUser}@${sshServer}:${sql}/TCOC/"
+                    sh "scp ${workspace}/Snowflake/SF_File_Frmt_iStage/* ${sshUser}@${sshServer}:${sql}/SF_File_Frmt_iStage/"
+
+
+
+
+
+                }
+            }
+        }
+    }
+    post {
+        always {
+            echo 'This will always run'
+            emailext body:  "Build URL: ${BUILD_URL}",
+                    subject: "$currentBuild.currentResult-$JOB_NAME",
+                    to: 'vigneshwaran.anbalagan@optum.com'
+        }
+        success {
+            echo 'This will run only if successful'
+        }
+        failure {
+            echo 'This will run only if failed'
+        }
+        unstable {
+            echo 'This will run only if the run was marked as unstable'
+        }
+        changed {
+            echo 'This will run only if the state of the Pipeline has changed'
+            echo 'For example, if the Pipeline was previously failing but is now successful'
+        }
+    }
+}

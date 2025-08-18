@@ -1,0 +1,712 @@
+#!/usr/bin/env groovy
+
+@Library("com.optum.jenkins.pipeline.library@master") _
+import com.optum.jenkins.pipeline.library.event.pipeline.EventType
+import com.optum.jenkins.pipeline.library.utils.types.TestType
+
+def sshCredId
+def sshUser
+def sshServer
+def jarPath
+def scriptPath
+def confpath
+def sql
+def envName
+def schema
+def build_id = "${env.BUILD_NUMBER}"
+
+pipeline {
+    agent {
+        label 'docker-maven-slave'
+    }
+    parameters {
+        choice (name: 'Environment',
+                choices: ['Update choices',
+                          'DEV','STG','PRD'],
+                description: 'Select Environment, use "Update choices" after committing to Jenkinsfile')
+
+        extendedChoice(name: 'Tasks',
+                        defaultValue: '',
+                        multiSelectDelimiter: ',',
+                        quoteValue: false,
+                        type: 'PT_CHECKBOX',
+                        value: 'SONAR_SCAN,FORTIFY_SCAN,DEPLOY_OBHDP',
+                        visibleItemCount: 3,
+                        description: '')
+
+        choice (name: 'Schema',
+               choices: ['Update choices',
+                  'ETL','COMPACT','FOUNDATION','OBH_DP','TCOC','NORTHSTAR'],
+               description: 'Select schema name, use "Update choices" after committing to Jenkinsfile')
+
+        extendedChoice(name: 'Options',
+                        defaultValue: '',
+                        multiSelectDelimiter: ',',
+                        quoteValue: false,
+                        type: 'PT_CHECKBOX',
+                        value: 'UPDATE_CONFIG,FILE_FORMAT,CREATE_STAGE,CREATE_TABLE,CREATE_PROCEDURE,CREATE_VIEW,STATIC_DATA,LOAD_DATA,ON_DEMAND,CREATE_TASK',
+                        visibleItemCount: 10,
+                        description: '')
+    }
+
+    environment {
+        GITHUB_USER = 'sonar_obhdpprd_creds'
+        DEVOPS_METRICS_ENABLED = 'false'
+        appName = 'obhdp_platform'
+        SN_USER = 'obhdp_ServiceNow_User' //enter a non-user ID to integrate with the ServiceNow API
+        DOCKER_HOSTNAME = 'docker.optum.com'
+        emailForTicketInput = 'padmaja.korrapati@optum.com,paul.savariraj@optum.com,vimal_sethupathy@optum.com'
+        emailForApproval = 'padmaja.korrapati@optum.com,paul.savariraj@optum.com,vimal_sethupathy@optum.com'
+        usersForTicketInput = 'OBH_Elites'
+        usersForApproval = 'pkorrapa,psavarir,vsethup1'
+        emailForNotification = 'padmaja.korrapati@optum.com,paul.savariraj@optum.com,vimal_sethupathy@optum.com'
+    }
+
+    options {
+             buildDiscarder(logRotator(daysToKeepStr: '5', numToKeepStr: '10'))
+             timeout(time: 3, unit: 'HOURS')
+             disableConcurrentBuilds()
+    }
+
+    stages {
+        stage ('Setup') {
+            agent { label 'docker-maven-slave' }
+            steps {
+                script {
+                    currentBuild.displayName = "${params.Environment}_${env.BUILD_NUMBER}"
+                }
+            }
+        }
+
+        stage('Print ENV') {
+                steps {
+                    script{
+                        schema = params.Schema
+                        if(params.Environment == 'PRD') {
+                            sshCredId = 'obhdpprd'
+                            sshUser = 'obhdpprd'
+                            sshServer = 'rp000030080.uhc.com'
+                            jarPath = '/obhdp/tcoc/p_jars'
+                            scriptPath = '/obhdp/tcoc/p_scripts'
+                            confpath = '/obhdp/tcoc/p_conf'
+                            sql = '/obhdp/tcoc/p_sql'
+                            envName = 'prd'
+                        }
+                        else if (params.Environment == 'STG') {
+                            sshCredId = 'obhdpstg'
+                            sshUser = 'obhdpstg'
+                            sshServer = 'rp000026270.uhc.com'
+                            jarPath = '/obhdp/tcoc/s_jars'
+                            scriptPath = '/obhdp/tcoc/s_scripts'
+                            confpath = '/obhdp/tcoc/s_conf'
+                            sql = '/obhdp/tcoc/s_sql'
+                            envName = 'stg'
+                        } else {
+                            sshCredId = 'obhdpdev'
+                            sshUser = 'obhdpdev'
+                            sshServer = 'rp000026270.uhc.com'
+                            jarPath = '/obhdp_dev/tcoc/d_jars'
+                            scriptPath = '/obhdp_dev/tcoc/d_scripts'
+                            confpath = '/obhdp_dev/tcoc/d_conf'
+                            sql = '/obhdp_dev/tcoc/d_sql'
+                            envName = 'dev'
+                        }
+                    }
+                    sh 'printenv'
+                }
+            }
+
+        stage ('Build Jar') {
+            steps {
+                glMavenBuild pomFile: "pom.xml", skipTests: 'true'
+            }
+        }
+
+        stage('Sonar Scan') {
+            when {
+                expression {
+                    params.Tasks ==~ /.*SONAR_SCAN.*/
+                }
+            }
+            steps {
+                glSonarMavenScan gitUserCredentialsId: "${env.GITHUB_USER}",
+                    productName: "${env.appName}",
+                    sonarHostUrl: "https://sonar.optum.com",
+                    sonarMavenPluginVersion: "3.7.0.1746",
+                    sonarLogin: "092c919905283a6d35ff1abe2128fc52e48a6156"
+            }
+        }
+
+        stage('Run Fortify Scan') {
+            agent {
+                // label 'docker-kitchensink-slave'
+                label 'docker-fortify-slave'
+            }
+            when {
+                expression {
+                    params.Tasks ==~ /.*FORTIFY_SCAN.*/
+                }
+            }
+            steps {
+                glFortifyScan fortifyBuildName:"OBHDP_TCOC",
+                        scarUploadToken:"f7e25f7f-8e00-483c-8eec-de497197dc38",
+                        scarProjectName:"OBHDP_TCOC",
+                        scarProjectVersion:"16983",
+                        criticalThreshold:10,
+                        highThreshold:20,
+                        mediumThreshold:50,
+                        lowThreshold:200,
+                        fortifyJdkVersion:"1.8",
+                        uploadToScar:false,
+                        wait: false
+            }
+        }
+
+        stage ("Approve STG") {
+            when {
+                beforeAgent true
+                anyOf { environment name: 'Environment', value: 'STG' }
+            }
+            steps {
+                script {
+                    emailext body: "A Jenkins build is waiting for approval. \nPlease login and use the \"Input requested\" link to approve deployment: ${BUILD_URL}",
+                             subject: "Jenkins job $JOB_Name waiting for approval",
+                             to: "$emailForApproval"
+
+                    def userInput = input id: 'userInput',
+                                      message: 'Please select and approve',
+                                      submitterParameter: 'submitter',
+                                      submitter: "$usersForApproval",
+                                      parameters: [[$class: 'BooleanParameterDefinition', defaultValue: false, description: "Select this to deploy the code ${envName} environment", name: envName]]
+                    if (userInput[envName] == false ) {
+                        currentBuild.result = 'ABORTED'
+                    }
+                }
+            }
+        }
+
+        stage ("Input ServiceNow Ticket") {
+            when {
+                beforeAgent true
+                anyOf { environment name: 'Environment', value: 'PRD' }
+            }
+            steps {
+                emailext body: "A Jenkins build is waiting for Change Ticket input. \nPlease login and use the \"Paused for input\" link to add an appropriate Change ticket: ${BUILD_URL}",
+                        subject: "Jenkins job $JOB_Name waiting for Change ticket input",
+                        to: "$emailForTicketInput"
+                glServiceNowTicketInput(message: "Please enter a ServiceNow ticket for this build", description: "The ticket needs to be at the \"Work in Progress\" state at time of submission", submitter:"$usersForTicketInput")
+            }
+        }
+
+        stage ("Get ServiceNow Ticket Details") {
+            agent { label 'docker-fortify-slave' }
+            when {
+                beforeAgent true
+                anyOf { environment name: 'Environment', value: 'PRD' }
+            }
+            steps {
+                glServiceNowTicketGet(credentials: "$env.SN_USER", ticket: "$env.SN_TICKET")
+            }
+        }
+
+        stage ("Wait on Approval") {
+            when {
+                beforeAgent true
+                anyOf { environment name: 'Environment', value: 'PRD' }
+            }
+            steps {
+                emailext body: "A Jenkins build for ${JOB_NAME} is waiting for your approval. \nPlease login to Jenkins and use the \"Paused for input\" link to approve: ${BUILD_URL}",
+                        subject: "Jenkins job $JOB_Name waiting for approval",
+                        to: "$emailForApproval"
+                glApproval(message: "Approve?", description: "Please review the supplied Change Ticket and approve if it is adequate.", submitter:"$usersForApproval", displayTicket: true)
+            }
+        }
+
+        stage ("Check if Change Ticket is In Progress") {
+            agent { label 'docker-fortify-slave' }
+            when {
+                beforeAgent true
+                anyOf { environment name: 'Environment', value: 'PRD' }
+            }
+            steps {
+                glServiceNowTicketVerify(credentials: "$env.SN_USER", ticket: "$env.SN_TICKET", isChangeWindow: true)
+            }
+        }
+
+        stage('Deploying to OBH Server') {
+            when {
+                expression {
+                    params.Tasks ==~ /.*DEPLOY_OBHDP.*/
+                }
+            }
+            steps {
+                timeout(time: 3, unit: 'HOURS')
+                        {
+                            echo 'Deploying to OBH Server'
+                            sshagent([sshCredId]) {
+                                // Establish the server as a known host for the scp
+                                print "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+
+                                // Remove all sql scripts and directories
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} rm -r ${sql}/*"
+
+                                // Create Directories
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/ETL"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/ETL/Configs"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/ETL/FileFormat"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/ETL/Stage"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/ETL/Tables"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/ETL/Procedures"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/ETL/Views"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/ETL/StaticData"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/ETL/Load"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/ETL/OnDemand"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/ETL/Tasks"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/COMPACT"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/COMPACT/Configs"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/COMPACT/Load"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/COMPACT/Procedures"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/COMPACT/Tables"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/FOUNDATION"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/FOUNDATION/Configs/"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/FOUNDATION/Load/"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/FOUNDATION/Tables/"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/FOUNDATION/Views/"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/OBH_DP/"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/OBH_DP/Load"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/OBH_DP/Tables"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/TCOC"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/TCOC/Views"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${scriptPath}/deployment"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/NORTHSTAR"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/NORTHSTAR/Tables"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/NORTHSTAR/Procedures"
+                                //sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/NORTHSTAR/Tasks"
+
+                                // Copy configuration to OBH Server
+                                sh "scp ${workspace}/scripts/${envName}/obhdp_conf.sh ${sshUser}@${sshServer}:${confpath}/"
+                                sh "scp ${workspace}/scripts/${envName}/python_tcoc.yaml ${sshUser}@${sshServer}:${confpath}/"
+                                sh "scp ${workspace}/scripts/smart_sf.config ${sshUser}@${sshServer}:${confpath}/"
+                                sh "scp ${workspace}/scripts/${envName}/smart_unix.conf ${sshUser}@${sshServer}:${confpath}/"
+                                sh "scp ${workspace}/scripts/${envName}/sfpsphrs.conf ${sshUser}@${sshServer}:${confpath}/"
+
+                                // Copy shell script to OBH Server
+                                sh "scp ${workspace}/scripts/LoopTCOCTrig.sh ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/OBH_cmpct_validate.sh ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/OBH_fnd_validate.sh ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/OBH_obhdp_validate.sh ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/OBH_SFTask_stschck.sh ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/OBH_Smart_Data_Load.sh ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/OBH_Smart_Trigger.sh ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/OBH_Smart_Sql_Exec.sh ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/OBH_File_Trnfr_SF.sh ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Compare_Entities_Ora_SF.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Cmpr_smrt_cmpct_small.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Cmpr_smrt_cmpct_med.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Cmpr_smrt_cmpct_FACT_RX_ADDITION.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Cmpr_smrt_cmpct_FACT_MEMBER_REVENUE_DETAIL.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Cmpr_smrt_cmpct_FACT_MEMBELIG_HIST.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Cmpr_smrt_cmpct_FACT_CLAIM_EXTN_PROV.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Cmpr_smrt_cmpct_FACT_CLAIM.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Cmpr_cmpct_fnd_CLM_TRANS_SRVC_LN.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Cmpr_cmpct_fnd_PHRM_DRG_CLM.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Cmpr_cmpct_obh_DIM_PHRM_NDC_DRG.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Cmpr_fnd_obh_CLM_TRANS_SRVC_LN.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/Cmpr_fnd_obh_PHRM_DRG_CLM.py ${sshUser}@${sshServer}:${scriptPath}/"
+                                sh "scp ${workspace}/scripts/OBH_Smart_Extraction_non_user_id.sh ${sshUser}@${sshServer}:${scriptPath}/"
+
+
+                                // Copy sql script to OBH Server ETL
+                                sh "scp ${workspace}/Snowflake/ETL/Configs/* ${sshUser}@${sshServer}:${sql}/ETL/Configs/"
+                                sh "scp ${workspace}/Snowflake/ETL/FileFormat/* ${sshUser}@${sshServer}:${sql}/ETL/FileFormat/"
+                                sh "scp ${workspace}/Snowflake/ETL/Load/* ${sshUser}@${sshServer}:${sql}/ETL/Load/"
+                                sh "scp ${workspace}/Snowflake/ETL/OnDemand/* ${sshUser}@${sshServer}:${sql}/ETL/OnDemand/"
+                                sh "scp ${workspace}/Snowflake/ETL/Procedures/* ${sshUser}@${sshServer}:${sql}/ETL/Procedures/"
+                                sh "scp ${workspace}/Snowflake/ETL/Stage/* ${sshUser}@${sshServer}:${sql}/ETL/Stage/"
+                                sh "scp ${workspace}/Snowflake/ETL/StaticData/* ${sshUser}@${sshServer}:${sql}/ETL/StaticData/"
+                                sh "scp ${workspace}/Snowflake/ETL/Tables/* ${sshUser}@${sshServer}:${sql}/ETL/Tables/"
+                                sh "scp ${workspace}/Snowflake/ETL/Tasks/${envName}/* ${sshUser}@${sshServer}:${sql}/ETL/Tasks/"
+
+                                // Copy sql script to OBH Server COMPACT
+                                sh "scp ${workspace}/Snowflake/COMPACT/Configs/* ${sshUser}@${sshServer}:${sql}/COMPACT/Configs/"
+                                sh "scp ${workspace}/Snowflake/COMPACT/Load/* ${sshUser}@${sshServer}:${sql}/COMPACT/Load/"
+                                sh "scp ${workspace}/Snowflake/COMPACT/Tables/* ${sshUser}@${sshServer}:${sql}/COMPACT/Tables/"
+                                sh "scp ${workspace}/Snowflake/COMPACT/Procedures/* ${sshUser}@${sshServer}:${sql}/COMPACT/Procedures/"
+
+                                // Copy sql script to OBH Server FOUNDATION
+                                sh "scp ${workspace}/Snowflake/FOUNDATION/Configs/* ${sshUser}@${sshServer}:${sql}/FOUNDATION/Configs/"
+                                sh "scp ${workspace}/Snowflake/FOUNDATION/Load/* ${sshUser}@${sshServer}:${sql}/FOUNDATION/Load"
+                                sh "scp ${workspace}/Snowflake/FOUNDATION/Tables/* ${sshUser}@${sshServer}:${sql}/FOUNDATION/Tables"
+                                sh "scp ${workspace}/Snowflake/FOUNDATION/Views/* ${sshUser}@${sshServer}:${sql}/FOUNDATION/Views"
+
+                                // Copy sql script to OBH Server OBH_DP
+                                sh "scp ${workspace}/Snowflake/OBH_DP/Load/* ${sshUser}@${sshServer}:${sql}/OBH_DP/Load"
+                                sh "scp ${workspace}/Snowflake/OBH_DP/Tables/* ${sshUser}@${sshServer}:${sql}/OBH_DP/Tables"
+
+                                // Copy sql script to OBH Server TCOC
+                                sh "scp ${workspace}/Snowflake/TCOC/Views/* ${sshUser}@${sshServer}:${sql}/TCOC/Views/"
+
+                                sh "scp ${workspace}/deployment/CHG1184723/* ${sshUser}@${sshServer}:${scriptPath}/deployment/"
+
+                                // Copy sql script to OBH Server NORTHSTAR
+                                sh "scp ${workspace}/Snowflake/NORTHSTAR/Tables/* ${sshUser}@${sshServer}:${sql}/NORTHSTAR/Tables"
+                                sh "scp ${workspace}/Snowflake/NORTHSTAR/Procedures/* ${sshUser}@${sshServer}:${sql}/NORTHSTAR/Procedures"
+                                // sh "scp ${workspace}/Snowflake/NORTHSTAR/Tasks/${envName}/* ${sshUser}@${sshServer}:${sql}/NORTHSTAR/Tasks"
+                                // Change permission
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} chmod  -R 755 ${scriptPath}"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} chmod  -R 755 ${confpath}"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} chmod  -R 755 ${jarPath}"
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} chmod  -R 755 ${sql}"
+                            }
+                        }
+            }
+        }
+
+        stage('Update Config') {
+            when {
+                expression {
+                    params.Options ==~ /.*UPDATE_CONFIG.*/
+                }
+            }
+            steps {
+                echo "Running Update Config"
+                sshagent([sshCredId]) {
+                    // The first ssh seems to be needed to establish the server as a known host for the scp
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+
+                    // Execute SQL Script
+                    script {
+                        dir("${workspace}/Snowflake/${schema}/Configs/") {
+                            def files = findFiles(glob: '*.*')
+                            echo "Scripts: ${files}"
+                            files.each { f ->
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/${schema}/Configs/${f.name}"
+                           }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('File Format') {
+            when {
+                expression {
+                    params.Options ==~ /.*FILE_FORMAT.*/
+                }
+            }
+            steps {
+                echo "Running File Format"
+                sshagent([sshCredId]) {
+                    // The first ssh seems to be needed to establish the server as a known host for the scp
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+
+                    // Execute SQL Script
+                     script {
+                         dir("${workspace}/Snowflake/${schema}/FileFormat/") {
+                             def files = findFiles(glob: '*.*')
+                             echo "Scripts: ${files}"
+                             files.each { f ->
+                                 sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/${schema}/FileFormat/${f.name}"
+                            }
+                         }
+                     }
+                }
+            }
+        }
+
+        stage('Create Stage') {
+            when {
+                expression {
+                    params.Options ==~ /.*CREATE_STAGE.*/
+                }
+            }
+            steps {
+                echo "Running Create Stage"
+                sshagent([sshCredId]) {
+                    // The first ssh seems to be needed to establish the server as a known host for the scp
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+
+                    // Execute SQL Script
+                     script {
+                         dir("${workspace}/Snowflake/${schema}/Stage/") {
+                             def files = findFiles(glob: '*.*')
+                             echo "Scripts: ${files}"
+                             files.each { f ->
+                                 sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/${schema}/Stage/${f.name}"
+                            }
+                         }
+                     }
+                }
+            }
+        }
+
+        stage('Create Table') {
+            when {
+                expression {
+                    params.Options ==~ /.*CREATE_TABLE.*/
+                }
+            }
+            steps {
+                echo "Running Create Table"
+                sshagent([sshCredId]) {
+                    // The first ssh seems to be needed to establish the server as a known host for the scp
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+
+                    // Execute SQL Script
+                    script {
+                        dir("${workspace}/Snowflake/${schema}/Tables/") {
+                            def files = findFiles(glob: '*.*')
+                            echo "Scripts: ${files}"
+                            files.each { f ->
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/${schema}/Tables/${f.name}"
+                           }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Create Task') {
+            when {
+                expression {
+                    params.Options ==~ /.*CREATE_TASK.*/
+                }
+            }
+            steps {
+                echo "Running Create Task"
+                sshagent([sshCredId]) {
+                    // The first ssh seems to be needed to establish the server as a known host for the scp
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+
+                    // Execute SQL Script
+                    script {
+                        dir("${workspace}/Snowflake/${schema}/Tasks/${envName}/") {
+                            def files = findFiles(glob: '*.*')
+                            echo "Scripts: ${files}"
+                            files.each { f ->
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/${schema}/Tasks/${f.name}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Create Procedure') {
+            when {
+                expression {
+                    params.Options ==~ /.*CREATE_PROCEDURE.*/
+                }
+            }
+            steps {
+                echo "Running Create Procedure"
+                sshagent([sshCredId]) {
+                    // The first ssh seems to be needed to establish the server as a known host for the scp
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+
+                    // Execute SQL Script
+                    script {
+                        dir("${workspace}/Snowflake/${schema}/Procedures/") {
+                            def files = findFiles(glob: '*.*')
+                            echo "Scripts: ${files}"
+                            files.each { f ->
+                                sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/${schema}/Procedures/${f.name}"
+                           }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Create View') {
+            when {
+                expression {
+                    params.Options ==~ /.*CREATE_VIEW.*/
+                }
+            }
+            steps {
+                echo "Running Create View"
+                sshagent([sshCredId]) {
+                    // The first ssh seems to be needed to establish the server as a known host for the scp
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+
+                    // Execute SQL Script
+                     script {
+                         dir("${workspace}/Snowflake/${schema}/Views/") {
+                             def files = findFiles(glob: '*.*')
+                             echo "Scripts: ${files}"
+                             files.each { f ->
+                                 sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/${schema}/Views/${f.name}"
+                            }
+                         }
+                     }
+                }
+            }
+        }
+
+        stage('Static Data') {
+            when {
+                expression {
+                    params.Options ==~ /.*STATIC_DATA.*/
+                }
+            }
+            steps {
+                echo "Running Static Data"
+                sshagent([sshCredId]) {
+                    // The first ssh seems to be needed to establish the server as a known host for the scp
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+
+                    // Execute SQL Script
+                     script {
+                         dir("${workspace}/Snowflake/${schema}/StaticData/") {
+                             def files = findFiles(glob: '*.*')
+                             echo "Scripts: ${files}"
+                             files.each { f ->
+                                 sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/${schema}/StaticData/${f.name}"
+                            }
+                         }
+                     }
+                }
+            }
+        }
+
+        stage('Load Data') {
+            when {
+                expression {
+                    params.Options ==~ /.*LOAD_DATA.*/
+                }
+            }
+            steps {
+                echo "Running Load Data"
+                sshagent([sshCredId]) {
+                    // The first ssh seems to be needed to establish the server as a known host for the scp
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+
+                    // Execute SQL Script
+                     script {
+                         dir("${workspace}/Snowflake/${schema}/Load/") {
+                             def files = findFiles(glob: '*.*')
+                             echo "Scripts: ${files}"
+                             files.each { f ->
+                                 sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/${schema}/Load/${f.name}"
+                            }
+                         }
+                     }
+                }
+            }
+        }
+
+        stage('On Demand') {
+            when {
+                expression {
+                    params.Options ==~ /.*ON_DEMAND.*/
+                }
+            }
+            steps {
+                echo "Running On Demand"
+                sshagent([sshCredId]) {
+                    // The first ssh seems to be needed to establish the server as a known host for the scp
+                    sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+
+                    // Execute SQL Script
+                      script {
+                          dir("${workspace}/Snowflake/${schema}/OnDemand/") {
+                              def files = findFiles(glob: '*.*')
+                              echo "Scripts: ${files}"
+                              files.each { f ->
+                                  sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/${schema}/OnDemand/${f.name}"
+                             }
+                          }
+                      }
+                }
+            }
+        }
+
+//        stage('OCM to OBHDP Data Load') {
+//                    when {
+//                        expression {
+//                            params.Tasks ==~ /.*OCM_OBHDP.*/
+//                        }
+//                    }
+//                    steps {
+//                        echo "Running OCM to OBHDP Data Load Scripts"
+//                        sshagent([sshCredId]) {
+//
+//                            // The first ssh seems to be needed to establish the server as a known host for the scp
+//                            sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} pwd"
+//                            sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/OCM_OBHDP"
+//                            sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/OCM_OBHDP/FOUNDATION"
+//                            sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/OCM_OBHDP/FOUNDATION/${envName}"
+//                            sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/OCM_OBHDP/FOUNDATION/${envName}/Procedures"
+//                            sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/OCM_OBHDP/FOUNDATION/${envName}/Tables"
+//                            sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} mkdir -p ${sql}/OCM_OBHDP/FOUNDATION/${envName}/Tasks"
+//                            // Copy sql script to OBH Server OCM_OBHDP sql scripts
+//                            sh "scp ${workspace}/Snowflake/OCM_OBHDP/FOUNDATION/${envName}/Procedures/* ${sshUser}@${sshServer}:${sql}/OCM_OBHDP/FOUNDATION/${envName}/Procedures"
+//                            sh "scp ${workspace}/Snowflake/OCM_OBHDP/FOUNDATION/${envName}/Tables/* ${sshUser}@${sshServer}:${sql}/OCM_OBHDP/FOUNDATION/${envName}/Tables"
+//                            sh "scp ${workspace}/Snowflake/OCM_OBHDP/FOUNDATION/${envName}/Tasks/* ${sshUser}@${sshServer}:${sql}/OCM_OBHDP/FOUNDATION/${envName}/Tasks"
+//                            // Execute SQL Script
+//                              script {
+//                                  dir("${workspace}/Snowflake/OCM_OBHDP/FOUNDATION/${envName}/Tables/") {
+//                                      def files = findFiles(glob: '*.*')
+//                                      echo "Scripts: ${files}"
+//                                      files.each { f ->
+//                                          sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/OCM_OBHDP/FOUNDATION/${envName}/Tables/${f.name}"
+//                                     }
+//                                  }
+//                                  dir("${workspace}/Snowflake/OCM_OBHDP/FOUNDATION/${envName}/Procedures/") {
+//                                      def files = findFiles(glob: '*.*')
+//                                      echo "Scripts: ${files}"
+//                                      files.each { f ->
+//                                          sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/OCM_OBHDP/FOUNDATION/${envName}/Procedures/${f.name}"
+//                                     }
+//                                  }
+//                                  dir("${workspace}/Snowflake/OCM_OBHDP/FOUNDATION/${envName}/Tasks/") {
+//                                      def files = findFiles(glob: '*.*')
+//                                      echo "Scripts: ${files}"
+//                                      files.each { f ->
+//                                          sh "ssh -o StrictHostKeyChecking=no ${sshUser}@${sshServer} ${scriptPath}/OBH_Smart_Sql_Exec.sh ${envName} ${schema} ${sql}/OCM_OBHDP/FOUNDATION/${envName}/Tasks/${f.name}"
+//                                     }
+//                                  }
+//
+//                              }
+//                        }
+//                    }
+//                }
+
+/*
+        stage('Execution of scripts') {
+            parallel {
+                stage('Part 1') { steps {pwd()}}
+                stage('Part 2') {
+                    stages {
+                        stage('Part 2a') { steps {pwd()}}
+                        stage('Part 2b') { steps {pwd()}}
+                    }
+                }
+            }
+        }
+         */
+    }
+    post {
+        always {
+            echo 'This will always run'
+            emailext body:  "Build URL: ${BUILD_URL}",
+                    subject: "$currentBuild.currentResult-$JOB_NAME",
+                    to: 'OBH_Elites@ds.uhc.com'
+        }
+        success {
+            echo 'This will run only if successful'
+        }
+        failure {
+            echo 'This will run only if failed'
+        }
+        unstable {
+            echo 'This will run only if the run was marked as unstable'
+        }
+        changed {
+            echo 'This will run only if the state of the Pipeline has changed'
+            echo 'For example, if the Pipeline was previously failing but is now successful'
+        }
+    }
+}

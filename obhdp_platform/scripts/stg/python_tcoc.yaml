@@ -1,0 +1,8 @@
+accountname: 'uhgdwaas.east-us-2.azure'
+username: 'obhdpstg@optum.com'
+private_key_path: '/home/obhdpstg/rsa_key.p8'
+dbname: 'ECT_STG_OBH_DP_DB'
+schemaname: 'FOUNDATION'
+warehousename: 'ECT_STG_OBH_DP_LOAD_WH'
+rolename: 'AR_PRD_OBHDPSTG_OPTUM_ROLE'
+passwordphrase: 'oBH@2o2$'
