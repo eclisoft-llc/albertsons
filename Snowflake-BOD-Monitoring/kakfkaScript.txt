@@ -1,0 +1,106 @@
+from kafka.admin import KafkaAdminClient
+import snowflake.connector
+import pandas as pd
+from kafka import KafkaConsumer, TopicPartition
+
+KAFKA_URL = "zduw-itka1br01.safeway.com:9095" # kafka broker
+KAFKA_TOPIC = "EDDW_C02_ECAT_PROMO" # topic name
+
+
+config = {}
+
+with open("config.txt") as f:
+    for line in f:
+        if "=" in line:
+            a = line.split("=")
+            config[a[0]] = a[1]
+'''
+sched = config["security_protocol"].strip()
+schedB = config["sasl_mechanism"].strip()
+lag = config["sasl_plain_username"].strip()
+env = config["sasl_plain_password"].strip()
+'''
+user = config["user"].strip()
+password = config["password"].strip()
+account = config["account"].strip()
+warehouse = config["warehouse"].strip()
+role = config["role"].strip()
+
+sch = snowflake.connector.connect(
+user=user,
+password=password,
+account=account,
+warehouse=warehouse,
+role=role,
+database='EDM_REFINED_PRD',
+schema='DW_R_LOCATION'
+)
+
+
+admin_client = KafkaAdminClient(bootstrap_servers=KAFKA_URL,security_protocol="SASL_SSL",
+                                sasl_mechanism="SCRAM-SHA-512",
+                                #sasl_jaas_config="org.apache.kafka.common.security.scram.ScramLoginModule required",
+                                sasl_plain_username="admin",
+                                sasl_plain_password="admin-secret",
+                                api_version=(0,11,5)
+                                )
+
+
+
+GROUP = "connect-connctcluster01.azure-to-azureBlob_Vendor"
+consumer = KafkaConsumer(
+bootstrap_servers=KAFKA_URL,security_protocol="SASL_SSL",
+                                sasl_mechanism="SCRAM-SHA-512",
+                                #sasl_jaas_config="org.apache.kafka.common.security.scram.ScramLoginModule required",
+                                sasl_plain_username="admin",
+                                sasl_plain_password="admin-secret",
+                                group_id=GROUP,
+                                api_version=(0,11,5)
+    )
+
+
+query = '''   
+SELECT BodName,GroupID FROM EDM_MONITORING_PRD.DW_DATAOPS.EDM_DASHBOARD_KAFKAGROUPS WHERE EffectiveEndDate IS NULL
+    '''
+    
+
+df = pd.read_sql_query(query ,sch)
+q=""
+
+for i in df.itertuples():
+    groups = admin_client.list_consumer_group_offsets(i.GROUPID)
+    
+    
+    b = 0
+    e = 0
+    l = 0
+    
+    for key in groups.keys():
+        be = 0
+        en = 0
+        la = 0
+        for p in consumer.partitions_for_topic(key.topic):
+            tp = TopicPartition(key.topic, p)        
+            consumer.assign([tp])
+            v=consumer.committed(tp)
+            committed = 0 if v is None else v
+            consumer.seek_to_end(tp)
+            last_offset = consumer.position(tp)
+            be+=committed
+            en+=last_offset
+            la+=(last_offset - committed)
+            
+        b=be
+        e=en
+        l=la
+    q+="SELECT '" + i.BODNAME + "' AS B," + str(b) + " AS BE," + str(e) + " AS EN," + str(l) + " AS LA UNION ALL \n"      
+
+if q:
+    q+="SELECT 'B' AS B, 0 AS BE,0 AS EN, 0 AS LA"
+query = '''
+MERGE INTO EDM_MONITORING_PRD.DW_DATAOPS.EDM_DASHBOARD_KAFKACALC AS T USING (SELECT * FROM(''' + q + ''') AS G WHERE G.B!='B' ) AS S ON T.BodName = S.B
+  WHEN MATCHED THEN UPDATE SET T.CommittedOffset = S.BE,T.EndOffset=S.EN,T.Lag=S.LA,T.DateModified=CURRENT_TIMESTAMP
+  WHEN NOT MATCHED THEN INSERT (BodName,CommittedOffset, EndOffset,Lag) VALUES (S.B,S.BE, S.EN,S.LA);
+  '''
+sch.cursor().execute(query)
+        

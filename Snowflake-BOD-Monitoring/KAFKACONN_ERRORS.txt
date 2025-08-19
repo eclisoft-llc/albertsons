@@ -1,0 +1,81 @@
+%4|1617726077.172|CONFWARN|rdkafka#producer-2| [thrd:app]: Configuration property group.id is a consumer property and will be ignored by this producer instance
+%4|1617726077.172|CONFWARN|rdkafka#producer-2| [thrd:app]: Configuration property auto.offset.reset is a consumer property and will be ignored by this producer instance
+%3|1617726098.210|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21037ms in state CONNECT)
+%3|1617726119.232|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21022ms in state CONNECT, 1 identical error(s) suppressed)
+%3|1617726161.368|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21089ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726203.448|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21039ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726245.577|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21052ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726288.673|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21047ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726330.753|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21035ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726372.823|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21025ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726414.907|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21036ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726458.003|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21046ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726500.079|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21027ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726542.220|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21068ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726584.349|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21072ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726627.428|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21022ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726669.497|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21021ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726711.566|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21031ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726753.695|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21060ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726796.769|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 21048ms in state CONNECT, 2 identical error(s) suppressed)
+%3|1617726828.498|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2524ms in state CONNECT, 5 identical error(s) suppressed)
+%3|1617726860.240|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2791ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617726891.534|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2735ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617726923.680|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2525ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617726955.497|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2693ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617726986.835|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2533ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727018.531|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2521ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727050.276|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2756ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727081.210|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2530ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617727113.634|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2570ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727144.044|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2502ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617727174.326|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2693ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617727204.422|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2740ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617727236.905|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2760ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727266.932|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2724ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617727298.574|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2526ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727329.002|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2534ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617727360.916|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2494ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727392.993|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2743ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727423.361|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2734ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617727455.078|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2725ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727487.030|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2531ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727517.219|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2728ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617727549.301|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2740ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727581.186|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2529ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727613.050|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2550ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727644.242|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2519ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727676.119|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2768ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727708.953|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2758ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727739.209|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2766ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617727770.827|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2745ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617727801.079|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2597ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617727831.603|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: Connect to ipv4#172.21.44.120:8443 failed: Unknown error (after 2490ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617727861.843|FAIL|rdkafka#producer-2| [thrd:172.21.44.120:8443/bootstrap]: 172.21.44.120:8443/bootstrap: 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%3|1617735717.789|FAIL|rdkafka#producer-2| [thrd:zpuweddwkput001.albertsons.com:9092/bootstrap]: zpuweddwkput001.albertsons.com:9092/bootstrap: Connect to ipv4#172.21.16.134:9092 failed: Unknown error (after 2604ms in state CONNECT)
+%3|1617735720.553|FAIL|rdkafka#producer-2| [thrd:zpuweddwkput001.albertsons.com:9092/bootstrap]: zpuweddwkput001.albertsons.com:9092/bootstrap: Connect to ipv4#172.21.16.134:9092 failed: Unknown error (after 2763ms in state CONNECT, 1 identical error(s) suppressed)
+%3|1617735752.352|FAIL|rdkafka#producer-2| [thrd:zpuweddwkput001.albertsons.com:9092/bootstrap]: zpuweddwkput001.albertsons.com:9092/bootstrap: Connect to ipv4#172.21.16.134:9092 failed: Unknown error (after 2648ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617735784.769|FAIL|rdkafka#producer-2| [thrd:zpuweddwkput001.albertsons.com:9092/bootstrap]: zpuweddwkput001.albertsons.com:9092/bootstrap: Connect to ipv4#172.21.16.134:9092 failed: Unknown error (after 2526ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617735817.273|FAIL|rdkafka#producer-2| [thrd:zpuweddwkput001.albertsons.com:9092/bootstrap]: zpuweddwkput001.albertsons.com:9092/bootstrap: Connect to ipv4#172.21.16.134:9092 failed: Unknown error (after 2810ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617735849.155|FAIL|rdkafka#producer-2| [thrd:zpuweddwkput001.albertsons.com:9092/bootstrap]: zpuweddwkput001.albertsons.com:9092/bootstrap: Connect to ipv4#172.21.16.134:9092 failed: Unknown error (after 2746ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617735880.692|FAIL|rdkafka#producer-2| [thrd:zpuweddwkput001.albertsons.com:9092/bootstrap]: zpuweddwkput001.albertsons.com:9092/bootstrap: Connect to ipv4#172.21.16.134:9092 failed: Unknown error (after 2517ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617735913.124|FAIL|rdkafka#producer-2| [thrd:zpuweddwkput001.albertsons.com:9092/bootstrap]: zpuweddwkput001.albertsons.com:9092/bootstrap: Connect to ipv4#172.21.16.134:9092 failed: Unknown error (after 2645ms in state CONNECT, 12 identical error(s) suppressed)
+%3|1617735943.790|FAIL|rdkafka#producer-2| [thrd:zpuweddwkput001.albertsons.com:9092/bootstrap]: zpuweddwkput001.albertsons.com:9092/bootstrap: Connect to ipv4#172.21.16.134:9092 failed: Unknown error (after 2821ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617735974.437|FAIL|rdkafka#producer-2| [thrd:zpuweddwkput001.albertsons.com:9092/bootstrap]: zpuweddwkput001.albertsons.com:9092/bootstrap: Connect to ipv4#172.21.16.134:9092 failed: Unknown error (after 2586ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617736004.749|FAIL|rdkafka#producer-2| [thrd:zpuweddwkput001.albertsons.com:9092/bootstrap]: zpuweddwkput001.albertsons.com:9092/bootstrap: Connect to ipv4#172.21.16.134:9092 failed: Unknown error (after 2524ms in state CONNECT, 11 identical error(s) suppressed)
+%3|1617736037.081|FAIL|rdkafka#producer-2| [thrd:zpuweddwkput001.albertsons.com:9092/boots
